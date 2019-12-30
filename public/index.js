@@ -17,16 +17,25 @@ Object.assign(c.canvas.style, {
 let imageData;
 const resolutionMultiplier = 0.5;
 const resize = () => {
-	c.canvas.width = innerWidth * devicePixelRatio * resolutionMultiplier;
-	c.canvas.height = innerHeight * devicePixelRatio * resolutionMultiplier;
+	c.canvas.width = innerWidth * resolutionMultiplier; // not multiplied by devicePixelRatio on purpose
+	c.canvas.height = innerHeight * resolutionMultiplier;
 	imageData = new ImageData(new Uint8ClampedArray(c.canvas.width * c.canvas.height * 4), c.canvas.width);
 };
 resize();
 addEventListener('resize', resize);
 
+let fullscreen = false;
+c.canvas.addEventListener('dblclick', async event => {
+	if (fullscreen = !fullscreen) {
+		await c.canvas.requestFullscreen();
+	} else {
+		document.exitFullscreen();
+	}
+});
+
 let frames = 0;
 setInterval(() => {
-	console.clear();
+// 	console.clear();
 	console.log(`Framerate: ${frames}`);
 	frames = 0;
 }, 1000);
