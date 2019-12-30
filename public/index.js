@@ -1,4 +1,7 @@
-const c = document.documentElement.appendChild(document.createElement('canvas')).getContext('2d');
+const c = document.documentElement
+	.appendChild(document.createElement('canvas'))
+	.getContext('2d')
+;
 Object.assign(c.canvas.style, {
 	position: 'fixed',
 	top: 0,
@@ -13,19 +16,18 @@ const resize = () => {
 resize();
 addEventListener('resize', resize);
 
-const render = () => {
+const render = async () => {
 	const t = Date.now();
-	for (let x = 0; x < c.canvas.width; x++) {
-		for (let y = 0; y < c.canvas.height; y++) {
-			c.fillStyle = Math.round(Math.random()) ? '#fff' : '#000';
-			c.fillRect(x, y, 1, 1);
-		}
+	const imageData = new ImageData(new Uint8ClampedArray(c.canvas.width * c.canvas.height * 4), c.canvas.width);
+	for (let i = 0; i < imageData.data.length; i += 4) {
+		const random = Math.random() * 255;
+		imageData.data[i] = random;
+		imageData.data[i + 1] = random;
+		imageData.data[i + 2] = random;
+		imageData.data[i + 3] = 255;
 	}
-// 	c.drawImage(
-// 		,
-// 		0,
-// 		0
-// 	);
+	const imageBitmap = await createImageBitmap(imageData, 0, 0, imageData.width, imageData.height);
+	c.drawImage(imageBitmap, 0, 0);
 	console.log(Date.now() - t);
 	requestAnimationFrame(render);
 }
