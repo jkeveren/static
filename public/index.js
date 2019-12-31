@@ -13,12 +13,14 @@ Object.assign(c.canvas.style, {
 	height: '100vh'
 });
 
-let imageData;
 const resolutionMultiplier = 0.5;
+let pixelCount;
+let imageData;
 const handleResize = () => {
-	c.canvas.width = innerWidth * resolutionMultiplier; // not multiplied by devicePixelRatio on purpose
-	c.canvas.height = innerHeight * resolutionMultiplier;
-	imageData = new ImageData(new Uint8ClampedArray(c.canvas.width * c.canvas.height * 4), c.canvas.width);
+	c.canvas.width = innerWidth * devicePixelRatio * resolutionMultiplier;
+	c.canvas.height = innerHeight * devicePixelRatio * resolutionMultiplier;
+	pixelCount = c.canvas.width * c.canvas.height;
+	imageData = new ImageData(new Uint8ClampedArray(pixelCount * 4), c.canvas.width);
 };
 handleResize();
 addEventListener('resize', handleResize);
@@ -32,16 +34,17 @@ setInterval(() => {
 
 const render = async () => {
 	let randomBits;
-	for (let i = 0; i < imageData.data.length; i += 4) {
-		if (!(i % 16)) {
+	let pixelDataStartIndex = 0;
+	for (let pixelIndex = 0; pixelIndex < pixelCount; pixelIndex++) {
+		if (!(pixelIndex % 15)) {
 			randomBits = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
 		}
 		randomBits >>>= 2;
-		const randomBrightness = randomBits & 0b11 * 85;
-		imageData.data[i] = randomBrightness;
-		imageData.data[i + 1] = randomBrightness;
-		imageData.data[i + 2] = randomBrightness;
-		imageData.data[i + 3] = 255;
+		const randomBrightness = (randomBits & 0b11) * 85;
+		imageData.data[pixelDataStartIndex++] = randomBrightness; // way faster when not in for loop
+		imageData.data[pixelDataStartIndex++] = randomBrightness;
+		imageData.data[pixelDataStartIndex++] = randomBrightness;
+		imageData.data[pixelDataStartIndex++] = 255;
 	}
 	const imageBitmap = await createImageBitmap(imageData, 0, 0, imageData.width, imageData.height);
 	c.drawImage(imageBitmap, 0, 0);
