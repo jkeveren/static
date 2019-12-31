@@ -6,9 +6,16 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [
+    "redirects": [
       {
         "source": "**[!(.js)]",
+        "destination": "/",
+        "type": 307
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/",
         "destination": "/index.html"
       }
     ]

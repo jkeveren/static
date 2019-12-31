@@ -10,32 +10,22 @@ Object.assign(c.canvas.style, {
 	position: 'fixed',
 	top: 0,
 	width: '100vw',
-	height: '100vh',
-	cursor: 'none'
+	height: '100vh'
 });
 
 let imageData;
 const resolutionMultiplier = 0.5;
-const resize = () => {
+const handleResize = () => {
 	c.canvas.width = innerWidth * resolutionMultiplier; // not multiplied by devicePixelRatio on purpose
 	c.canvas.height = innerHeight * resolutionMultiplier;
 	imageData = new ImageData(new Uint8ClampedArray(c.canvas.width * c.canvas.height * 4), c.canvas.width);
 };
-resize();
-addEventListener('resize', resize);
-
-let fullscreen = false;
-c.canvas.addEventListener('dblclick', async event => {
-	if (fullscreen = !fullscreen) {
-		await c.canvas.requestFullscreen();
-	} else {
-		document.exitFullscreen();
-	}
-});
+handleResize();
+addEventListener('resize', handleResize);
 
 let frames = 0;
 setInterval(() => {
-// 	console.clear();
+	console.clear();
 	console.log(`Framerate: ${frames}`);
 	frames = 0;
 }, 1000);
@@ -59,3 +49,33 @@ const render = async () => {
 	requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
+
+let fullscreen = false;
+const toggleFullscreen = async event => {
+	if (fullscreen = !fullscreen) {
+		await c.canvas.requestFullscreen();
+	} else {
+		document.exitFullscreen();
+	}
+};
+
+for (const [eventName, handler] of Object.entries({
+	dblclick: toggleFullscreen,
+	keydown(event) {if (event.key === 'f') toggleFullscreen()}
+})) {
+	addEventListener(eventName, handler, true);
+}
+
+let hideCursorTimeoutId = setTimeout(() => {}, 0);
+const showCursor = () => {
+	c.canvas.style.cursor = 'default';
+	clearTimeout(hideCursorTimeoutId);
+	hideCursorTimeoutId = setTimeout(() => {
+		c.canvas.style.cursor = 'none';
+	}, 2000);
+};
+showCursor();
+
+addEventListener('mousemove', showCursor);
+
+// fix blurryness?
