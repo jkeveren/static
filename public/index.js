@@ -67,18 +67,21 @@ const randomBitsRegenerationIndex = (32 / randomBitsPerPixel) - 1; // 32 is the 
 const bitMask = (2 ** randomBitsPerPixel) - 1;
 const intensityMultiplier = 255 / bitMask; // 255 is the maximum intensity of each pixel component
 const render = async () => {
-	const renderStartTime = performance.now()
-	const generateRandomBits = () => Math.floor(Math.random() * 0b11111111111111111111111111111111); // TODO: use crypto.generateRandomBits instead
+	const renderStartTime = performance.now(); // low resolution in firefox
+	/* `Number.MAX_SAFE_INTEGER >>> 0` to get maximum 32 bit unsigned integer because `Math.random() * Number.MAX_SAFE_INTEGER` always returns an odd number.
+	https://www.reddit.com/r/javascript/comments/5xinvo/random_odd_value_every_time/
+	TODO: use crypto.generateRandomBits instead */
+	const generateRandomBits = () => Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER >>> 0));
 	let randomBits = generateRandomBits();
 	let intensity;
 	let randomBitsIndex = 0;
-// 	const data = imageData.data;
-	const imageDataLength = imageData.data.length;
 	const data = imageData.data;
-	for (let pixelDataStartIndex = -2; pixelDataStartIndex < imageData.data.length;) {
-		// KEEP THIS BLOCK EFFICIENT. It gets called >120 million times times per second for a 1920*1080 canvas
+	const dataLength = data.length;
+	for (let pixelDataStartIndex = -2; pixelDataStartIndex < dataLength;) {
+		// KEEP THIS BLOCK EFFICIENT. It gets called ~120 million times per second for a 1920*1080 canvas at 60Hz
 		if (randomBitsIndex++ === randomBitsRegenerationIndex) { // TODO pregenerate random bits so don't need if statement
-			randomBitsIndex = 0
+			// generate new randomBits once all have been used
+			randomBitsIndex = 0;
 			randomBits = generateRandomBits();
 		}
 		intensity = (randomBits & bitMask) * intensityMultiplier;
