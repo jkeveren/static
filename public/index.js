@@ -25,7 +25,7 @@ Object.assign(c.canvas.style, {
 	height: '100vh'
 });
 
-const resolutionMultiplier = 1; // to create bluryness
+const resolutionMultiplier = 0.5; // to create bluryness
 let pixelCount;
 let imageData;
 
@@ -44,12 +44,13 @@ const handleResize = () => {
 handleResize();
 addEventListener('resize', handleResize);
 
-// Render time display
-// - add "time" to querystring
+// Info element
+// - add "info" to querystring
 
-const renderTimeElement = document.createElement('div');
-if (location.search.includes('time')) {
-	Object.assign(renderTimeElement.style, {
+const infoElement = document.createElement('div');
+const displayInfo = location.search.includes('info');
+if (displayInfo) {
+	Object.assign(infoElement.style, {
 		position: 'fixed',
 		color: '#fff',
 		background: '#777',
@@ -57,21 +58,22 @@ if (location.search.includes('time')) {
 		width: 'min-content',
 		fontFamily: 'monospace', // get that serif shit outta here
 	});
-	document.body.appendChild(renderTimeElement);
+	document.body.appendChild(infoElement);
+} else {
+	console.info(`Pro tip: go to ${location.origin}/?info to display nerdy stuff.`);
 }
 
 // Render loop
 
 const randomByteCount = 65536; // maximum number of values `crypto.getRandomValues()` can create
 const randomBytes = new Uint8ClampedArray(randomByteCount);
-
+let lastFrameRenderStartTime = performance.now();
 const render = async () => {
 	const renderStartTime = performance.now(); // low resolution in firefox
 	let pixelDataStartIndex = -2;
 	let randomByteIndex = randomByteCount;
 	const data = imageData.data;
 	const dataLength = data.length;
-	const a = Math.round(randomByteCount / 2);
 	while (pixelDataStartIndex < dataLength) {
 		// KEEP THIS BLOCK EFFICIENT. It gets called ~120 million times per second for a 1920*1080 canvas at 60Hz
 		// generate new randomBytes once all have been used
@@ -87,10 +89,16 @@ const render = async () => {
 	}
 	const imageBitmap = await createImageBitmap(imageData, 0, 0, imageData.width, imageData.height);
 	c.drawImage(imageBitmap, 0, 0);
-	const renderTime = performance.now() - renderStartTime;
-	renderTimeElement.textContent = 
-		`Frame Time: ${(renderTime).toFixed(1)}ms
-		Pixel Rate: ${Math.round(((1000 / renderTime) * pixelCount) / 10 ** 6)}Mp/s`.replace(/ /g, '\u00a0'); // kinda flickery but nice and simple
+	if (displayInfo) {
+		const renderTime = performance.now() - renderStartTime;
+		infoElement.textContent =
+			`Render Time: ${(renderTime).toFixed(1)}ms
+			Frame Rate: ${Math.round(1000 / (renderStartTime - lastFrameRenderStartTime))}Hz
+			Peak Pixel Rate: ${Math.round(((1000 / renderTime) * pixelCount) / 10 ** 6)}MHz
+			`
+		.replace(/ /g, '\u00a0'); // kinda flickery but nice and simple
+		lastFrameRenderStartTime = renderStartTime;
+	}
 	requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
