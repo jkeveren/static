@@ -25,7 +25,7 @@ Object.assign(c.canvas.style, {
 	height: '100vh'
 });
 
-const resolutionMultiplier = 0.5;
+const resolutionMultiplier = 1; // to create bluryness
 let pixelCount;
 let imageData;
 
@@ -63,27 +63,30 @@ if (location.search.includes('time')) {
 // Render loop
 
 const randomBitsPerPixel = 2; // Must be one of [1, 2, 4, 8]. Number of random bits to use per pixel. Higher is higher quality but requires more random number generation. more than 8 is redundant as there are only 256 levels available
-const randomBitsRegenerationIndex = (32 / randomBitsPerPixel) - 1;
+const randomBitsRegenerationIndex = (32 / randomBitsPerPixel) - 1; // 32 is the number of shiftable bits in MAX_SAFE_INTEGER despite it being 53 bits long
 const bitMask = (2 ** randomBitsPerPixel) - 1;
-const brightnessMultiplier = 255 / bitMask;
+const intensityMultiplier = 255 / bitMask; // 255 is the maximum intensity of each pixel component
 const render = async () => {
 	const renderStartTime = performance.now()
-	let randomBits;
-	let pixelDataStartIndex = -2;
-// 	let pixelDataStartIndex = 0;
-	let brightness;
-	for (let pixelIndex = 0; pixelIndex < pixelCount;) {
-		// KEEP THIS BLOCK EFFICIENT. It gets called 2 million times for a 1920*1080 canvas
-		if (!(pixelIndex++ % randomBitsRegenerationIndex)) { // TODO pregenerate random bits so don't need if statement
-			randomBits = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+	const generateRandomBits = () => Math.floor(Math.random() * 0b11111111111111111111111111111111); // TODO: use crypto.generateRandomBits instead
+	let randomBits = generateRandomBits();
+	let intensity;
+	let randomBitsIndex = 0;
+// 	const data = imageData.data;
+	const imageDataLength = imageData.data.length;
+	const data = imageData.data;
+	for (let pixelDataStartIndex = -2; pixelDataStartIndex < imageData.data.length;) {
+		// KEEP THIS BLOCK EFFICIENT. It gets called >120 million times times per second for a 1920*1080 canvas
+		if (randomBitsIndex++ === randomBitsRegenerationIndex) { // TODO pregenerate random bits so don't need if statement
+			randomBitsIndex = 0
+			randomBits = generateRandomBits();
 		}
+		intensity = (randomBits & bitMask) * intensityMultiplier;
 		randomBits >>>= randomBitsPerPixel;
-		brightness = (randomBits & bitMask) * brightnessMultiplier;
-
 		// duplicate code because iterating is too expensive
-		imageData.data[pixelDataStartIndex += 2] = brightness;
-		imageData.data[++pixelDataStartIndex] = brightness;
-		imageData.data[++pixelDataStartIndex] = brightness;
+		data[pixelDataStartIndex += 2] = intensity; // += 2 to skip alpha byte of previous pixel
+		data[++pixelDataStartIndex] = intensity;
+		data[++pixelDataStartIndex] = intensity;
 	}
 	const imageBitmap = await createImageBitmap(imageData, 0, 0, imageData.width, imageData.height);
 	c.drawImage(imageBitmap, 0, 0);
