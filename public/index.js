@@ -67,6 +67,7 @@ if (displayInfo) {
 const randomByteCount = 65536; // maximum number of values `crypto.getRandomValues()` can create
 const randomBytes = new Uint8ClampedArray(randomByteCount);
 let lastFrameRenderStartTime = performance.now();
+
 const render = async () => {
 	const renderStartTime = performance.now(); // low resolution in firefox
 	let pixelDataStartIndex = -2;
@@ -91,16 +92,16 @@ const render = async () => {
 	if (displayInfo) {
 		const renderTime = performance.now() - renderStartTime;
 		infoElement.textContent =
-			`Frame Rate: ${Math.round(1000 / (renderStartTime - lastFrameRenderStartTime))}Hz
+			`Frame Rate: ${(1000 / (renderStartTime - lastFrameRenderStartTime)).toFixed(1)}Hz
 			Render Time: ${(renderTime).toFixed(1)}ms
-			Peak Pixel Rate: ${Math.round(((1000 / renderTime) * pixelCount) / 10 ** 6)}MHz
-			`
+			Peak Pixel Rate: ${Math.round(((1000 / renderTime) * pixelCount) / 10 ** 6)}MHz`
 		.replace(/ /g, '\u00a0'); // kinda flickery but nice and simple
 		lastFrameRenderStartTime = renderStartTime;
 	}
-	requestAnimationFrame(render);
+	// wait to avoid blocking
+	setTimeout(render); // not using requestAminationFrame because it causes almost every other frame to skip when rendering to 1920*1080 canvas becuase of the long render time
 }
-requestAnimationFrame(render);
+render();
 
 // Fullscreen controls
 
