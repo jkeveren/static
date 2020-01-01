@@ -62,30 +62,24 @@ if (location.search.includes('time')) {
 
 // Render loop
 
-const randomBitsPerPixel = 2; // Must be one of [1, 2, 4, 8]. Number of random bits to use per pixel. Higher is higher quality but requires more random number generation. more than 8 is redundant as there are only 256 levels available
-const randomBitsRegenerationIndex = (32 / randomBitsPerPixel) - 1; // 32 is the number of shiftable bits in MAX_SAFE_INTEGER despite it being 53 bits long
-const bitMask = (2 ** randomBitsPerPixel) - 1;
-const intensityMultiplier = 255 / bitMask; // 255 is the maximum intensity of each pixel component
+const randomByteCount = 65536; // maximum number of values `crypto.getRandomValues()` can create
+const randomBytes = new Uint8ClampedArray(randomByteCount);
+
 const render = async () => {
 	const renderStartTime = performance.now(); // low resolution in firefox
-	/* `Number.MAX_SAFE_INTEGER >>> 0` to get maximum 32 bit unsigned integer because `Math.random() * Number.MAX_SAFE_INTEGER` always returns an odd number.
-	https://www.reddit.com/r/javascript/comments/5xinvo/random_odd_value_every_time/
-	TODO: use crypto.generateRandomBits instead */
-	const generateRandomBits = () => Math.floor(Math.random() * (Number.MAX_SAFE_INTEGER >>> 0));
-	let randomBits = generateRandomBits();
-	let intensity;
-	let randomBitsIndex = 0;
+	let pixelDataStartIndex = -2;
+	let randomByteIndex = randomByteCount;
 	const data = imageData.data;
 	const dataLength = data.length;
-	for (let pixelDataStartIndex = -2; pixelDataStartIndex < dataLength;) {
+	const a = Math.round(randomByteCount / 2);
+	while (pixelDataStartIndex < dataLength) {
 		// KEEP THIS BLOCK EFFICIENT. It gets called ~120 million times per second for a 1920*1080 canvas at 60Hz
-		if (randomBitsIndex++ === randomBitsRegenerationIndex) { // TODO pregenerate random bits so don't need if statement
-			// generate new randomBits once all have been used
-			randomBitsIndex = 0;
-			randomBits = generateRandomBits();
+		// generate new randomBytes once all have been used
+		if (randomByteIndex++ === randomByteCount) {
+			randomByteIndex = 0;
+			crypto.getRandomValues(randomBytes);
 		}
-		intensity = (randomBits & bitMask) * intensityMultiplier;
-		randomBits >>>= randomBitsPerPixel;
+		let intensity = randomBytes[randomByteIndex];
 		// duplicate code because iterating is too expensive
 		data[pixelDataStartIndex += 2] = intensity; // += 2 to skip alpha byte of previous pixel
 		data[++pixelDataStartIndex] = intensity;
@@ -93,7 +87,10 @@ const render = async () => {
 	}
 	const imageBitmap = await createImageBitmap(imageData, 0, 0, imageData.width, imageData.height);
 	c.drawImage(imageBitmap, 0, 0);
-	renderTimeElement.textContent = `${(performance.now() - renderStartTime).toFixed(1)}ms`; // could use rolling average for readability but it's not worth the complexity
+	const renderTime = performance.now() - renderStartTime;
+	renderTimeElement.textContent = 
+		`Frame Time: ${(renderTime).toFixed(1)}ms
+		Pixel Rate: ${Math.round(((1000 / renderTime) * pixelCount) / 10 ** 6)}Mp/s`.replace(/ /g, '\u00a0'); // kinda flickery but nice and simple
 	requestAnimationFrame(render);
 }
 requestAnimationFrame(render);
