@@ -2,8 +2,7 @@
 
 Renders approximated static to page
 - Uses CanvasRenderingContext2D.drawImage() for speed.
-- Uses only 2 bits of randomness for each pixel to reduce expensive calls to Math.random().
-- Could be better by using webgl2 but I don't know enough about webgl to get it to render 2d things nicely.
+- Could be better by using webgl2 but I don't know enough about webgl to get it to render 2d things nicely yet.
 
 */
 
@@ -92,8 +91,8 @@ const render = async () => {
 	if (displayInfo) {
 		const renderTime = performance.now() - renderStartTime;
 		infoElement.textContent =
-			`Render Time: ${(renderTime).toFixed(1)}ms
-			Frame Rate: ${Math.round(1000 / (renderStartTime - lastFrameRenderStartTime))}Hz
+			`Frame Rate: ${Math.round(1000 / (renderStartTime - lastFrameRenderStartTime))}Hz
+			Render Time: ${(renderTime).toFixed(1)}ms
 			Peak Pixel Rate: ${Math.round(((1000 / renderTime) * pixelCount) / 10 ** 6)}MHz
 			`
 		.replace(/ /g, '\u00a0'); // kinda flickery but nice and simple
