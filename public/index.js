@@ -27,6 +27,8 @@ Object.assign(c.canvas.style, {
 const resolutionMultiplier = 0.5; // to create bluryness
 let pixelCount;
 let imageData;
+let imageDataData;
+let imageDataDataLength;
 
 // Canvas resizing
 
@@ -35,9 +37,11 @@ const handleResize = () => {
 	c.canvas.height = innerHeight * devicePixelRatio * resolutionMultiplier;
 	pixelCount = c.canvas.width * c.canvas.height;
 	imageData = new ImageData(new Uint8ClampedArray(pixelCount * 4), c.canvas.width);
+	imageDataData = imageData.data;
+	imageDataDataLength = imageDataData.length;
 	// set alpha bytes to max
-	for (let i = 3; i < imageData.data.length; i += 4) {
-		imageData.data[i] = 255;
+	for (let i = 3; i < imageDataDataLength; i += 4) {
+		imageDataData[i] = 255;
 	}
 };
 handleResize();
@@ -64,28 +68,28 @@ if (displayInfo) {
 
 // Render loop
 
-const randomByteCount = 65536; // maximum number of values `crypto.getRandomValues()` can create
-const randomBytes = new Uint8ClampedArray(randomByteCount);
+const getRandomValuesMaximum = 65536; // maximum number of values `crypto.getRandomValues()` can create
 let lastFrameRenderStartTime = performance.now();
 
 const render = async () => {
 	const renderStartTime = performance.now(); // low resolution in firefox
 	let pixelDataStartIndex = -2;
-	let randomByteIndex = randomByteCount;
-	const data = imageData.data;
-	const dataLength = data.length;
-	while (pixelDataStartIndex < dataLength) {
+	let intensityIndex = 0;
+	const intensities = new Uint8ClampedArray(pixelCount);
+	for (;intensityIndex < pixelCount; intensityIndex += getRandomValuesMaximum) {
+		const intensitiesRemaining = pixelCount - intensityIndex;
+		const intensitiesToGet = Math.min(getRandomValuesMaximum, intensitiesRemaining);
+		intensities.set(crypto.getRandomValues(new Uint8ClampedArray(intensitiesToGet)), intensityIndex);
+	}
+	intensityIndex = 0;
+	// TODO: maybve use a worker to do this:
+	while (pixelDataStartIndex < imageDataDataLength) { // TODO test incrementing pixelDataStartIndex in here
 		// KEEP THIS BLOCK EFFICIENT. It gets called ~120 million times per second for a 1920*1080 canvas at 60Hz
-		// generate new randomBytes once all have been used
-		if (randomByteIndex++ === randomByteCount) {
-			randomByteIndex = 0;
-			crypto.getRandomValues(randomBytes);
-		}
-		let intensity = randomBytes[randomByteIndex];
+		let intensity = intensities[intensityIndex++];
 		// duplicate code because iterating is too expensive
-		data[pixelDataStartIndex += 2] = intensity; // += 2 to skip alpha byte of previous pixel
-		data[++pixelDataStartIndex] = intensity;
-		data[++pixelDataStartIndex] = intensity;
+		imageDataData[pixelDataStartIndex += 2] = intensity; // += 2 to skip alpha byte of previous pixel
+		imageDataData[++pixelDataStartIndex] = intensity;
+		imageDataData[++pixelDataStartIndex] = intensity;
 	}
 	const imageBitmap = await createImageBitmap(imageData, 0, 0, imageData.width, imageData.height);
 	c.drawImage(imageBitmap, 0, 0);

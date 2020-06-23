@@ -1,23 +1,23 @@
 {
-  "hosting": {
-    "public": "public",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "redirects": [
-      {
-        "source": "**[!(.js)]",
-        "destination": "/",
-        "type": 307
-      }
-    ],
-    "rewrites": [
-      {
-        "source": "/",
-        "destination": "/index.html"
-      }
-    ]
-  }
+	"hosting": {
+		"public": "public",
+		"ignore": [
+			"firebase.json",
+			"**/.*",
+			"**/node_modules/**"
+		],
+		"redirects": [
+			{
+				"source": "**[!(.js)]",
+				"destination": "/",
+				"type": 307
+			}
+		],
+		"rewrites": [
+			{
+				"source": "/",
+				"destination": "/index.html"
+			}
+		]
+	}
 }
